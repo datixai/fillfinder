@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/process.py": { "memory": 1024, "maxDuration": 60 }
+  }
+}

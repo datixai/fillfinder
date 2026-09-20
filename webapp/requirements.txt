@@ -1,0 +1,3 @@
+pyembroidery>=1.5
+shapely>=2.0
+numpy>=1.21

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FillFinder: automatic fill for embroidery designs</title>
+<style>
+  :root{
+    --bg:#f4f5f9; --card:#fff; --ink:#1b1b23; --muted:#6a6a78;
+    --brand:#2b4fd0; --brand-dark:#1e3aa0; --line:#e2e3ea; --ok:#148f5b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(135deg,#1e2350,#2b4fd0);color:#fff;padding:26px 20px}
+  header .in{max-width:1080px;margin:auto}
+  header h1{margin:0;font-size:24px;letter-spacing:.2px}
+  header p{margin:6px 0 0;opacity:.85;font-size:14px;max-width:70ch}
+  main{max-width:1080px;margin:auto;padding:22px 20px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;
+        box-shadow:0 1px 2px rgba(20,20,40,.05)}
+  h2{font-size:17px;margin:0 0 10px}
+  .drop{border:2px dashed #b9bdd0;border-radius:12px;padding:30px 18px;text-align:center;cursor:pointer;
+        transition:.15s;background:#fafbff}
+  .drop:hover,.drop.over{border-color:var(--brand);background:#eef2ff}
+  .drop b{display:block;font-size:16px;margin-bottom:4px}
+  .drop span{color:var(--muted);font-size:13px}
+  button{font:inherit;border:0;border-radius:9px;padding:11px 18px;cursor:pointer;background:var(--brand);color:#fff;font-weight:600}
+  button:hover{background:var(--brand-dark)}
+  button:disabled{background:#a7aec9;cursor:not-allowed}
+  button.ghost{background:#eef0f7;color:var(--ink);font-weight:500}
+  button.ghost:hover{background:#e2e5f0}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .file{margin-top:14px;font-size:14px;display:none;align-items:center;gap:10px;justify-content:space-between;
+        background:#f2f4fb;border-radius:9px;padding:10px 14px}
+  details{margin-top:14px}
+  summary{cursor:pointer;color:var(--brand);font-size:14px;font-weight:600}
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:12px}
+  label{font-size:13px;color:var(--muted);display:block}
+  input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;margin-top:4px}
+  .check{display:flex;align-items:center;gap:8px;margin-top:22px;color:var(--ink);font-size:14px}
+  .bar{height:6px;background:#e6e8f2;border-radius:99px;overflow:hidden;margin-top:14px;display:none}
+  .bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .4s}
+  .status{font-size:14px;color:var(--muted);margin-top:10px;display:none}
+  .err{background:#fff3f3;border:1px solid #f3c7c7;color:#a3282f;padding:12px 14px;border-radius:10px;
+       font-size:14px;margin-top:14px;display:none}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{background:#f7f8fc;border-radius:11px;padding:14px}
+  .stat b{display:block;font-size:24px;line-height:1.1}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  .step{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start;padding:18px 0;border-top:1px solid var(--line)}
+  .step:first-of-type{border-top:0}
+  .step h3{margin:0 0 6px;font-size:16px}
+  .step p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+  .shot{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:zoom-in}
+  .shot img{width:100%;display:block;border-radius:6px}
+  .shot small{display:block;text-align:center;color:var(--muted);font-size:11.5px;margin-top:6px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:8px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600}
+  .tag{font-size:12px;padding:2px 9px;border-radius:99px;background:#eef2ff;color:var(--brand);font-weight:600}
+  .tag.fill{background:#fdeeee;color:#b3423f}.tag.mixed{background:#fff6e5;color:#9a6a12}
+  .modal{position:fixed;inset:0;background:rgba(14,14,24,.85);display:none;align-items:center;justify-content:center;
+         padding:24px;z-index:50}
+  .modal img{max-width:100%;max-height:88vh;background:#fff;border-radius:10px;padding:10px}
+  .modal button{position:absolute;top:18px;right:20px}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:0 20px 30px}
+  @media(max-width:760px){.step{grid-template-columns:1fr}.step .shot{order:-1}}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>FillFinder</h1>
+  <p>Upload an embroidery design and see every closed area found and filled automatically. No tracing shape by
+     shape. Works with designs drawn as lines only, and with finished designs too.</p>
+</div></header>
+
+<main>
+  <section class="card">
+    <h2>1. Choose your design file</h2>
+    <div class="drop" id="drop">
+      <b>Click here or drop a file</b>
+      <span>DST, PES, EXP, JEF and similar. Up to 12 MB.</span>
+    </div>
+    <input type="file" id="file" accept=".dst,.DST,.pes,.PES,.exp,.EXP,.jef,.JEF,.vp3,.xxx,.hus,.pec" hidden>
+    <div class="file" id="chosen"><span id="fname"></span><button class="ghost" id="clear">Remove</button></div>
+
+    <details>
+      <summary>Settings (optional)</summary>
+      <div class="opts">
+        <div><label>Close gaps up to (mm)<input type="number" id="gap" value="0.6" step="0.1" min="0.1" max="5"></label></div>
+        <div><label>Treat wider than this as a fill (mm)<input type="number" id="thick" value="3.5" step="0.5" min="1" max="20"></label></div>
+        <div><label>Ignore areas smaller than (mm&sup2;)<input type="number" id="min_area" value="4" step="1" min="0.5"></label></div>
+        <div><label>Fill angle (degrees)<input type="number" id="angle" value="45" step="5" min="0" max="180"></label></div>
+        <div><label>Fill spacing (mm)<input type="number" id="spacing" value="0.4" step="0.05" min="0.2" max="2"></label></div>
+        <div class="check"><input type="checkbox" id="fill_all"><label for="fill_all" style="color:inherit">Also fill areas that were empty in the original</label></div>
+        <div class="check"><input type="checkbox" id="make_stitches" checked><label for="make_stitches" style="color:inherit">Create stitch files (DST and PES)</label></div>
+      </div>
+    </details>
+
+    <div class="row" style="margin-top:16px">
+      <button id="go" disabled>Run FillFinder</button>
+      <span style="color:var(--muted);font-size:13px">Large designs can take up to a minute.</span>
+    </div>
+    <div class="bar" id="bar"><i></i></div>
+    <div class="status" id="status"></div>
+    <div class="err" id="err"></div>
+  </section>
+
+  <section class="card" id="results" style="display:none">
+    <h2>What happened to your design</h2>
+    <div class="stats" id="stats"></div>
+    <div id="steps"></div>
+  </section>
+
+  <section class="card" id="details" style="display:none">
+    <h2>Details</h2>
+    <div id="blocks"></div>
+    <div id="regions"></div>
+  </section>
+
+  <section class="card" id="dl" style="display:none">
+    <h2>Download your files</h2>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 12px">
+      Use <b>regions_for_wilcom.svg</b> in Wilcom: import it as a graphic, the shapes land in the exact same
+      position as your design, then apply any stitch type you like. The DST and PES files are a quick preview.</p>
+    <div class="row" id="dlrow"></div>
+  </section>
+</main>
+
+<div class="modal" id="modal"><button class="ghost" id="close">Close</button><img id="big" alt=""></div>
+<footer>FillFinder prototype by Datix AI. Fill stitches shown here are preview quality; final stitching is meant to be done in Wilcom.</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let chosenFile = null, urls = [];
+
+function pick(f){
+  if(!f) return;
+  chosenFile = f;
+  $("fname").textContent = f.name + "  (" + (f.size/1024).toFixed(0) + " KB)";
+  $("chosen").style.display = "flex";
+  $("go").disabled = false;
+  $("err").style.display = "none";
+}
+$("drop").onclick = () => $("file").click();
+$("file").onchange = e => pick(e.target.files[0]);
+$("clear").onclick = () => { chosenFile=null; $("file").value=""; $("chosen").style.display="none"; $("go").disabled=true; };
+["dragenter","dragover"].forEach(ev => $("drop").addEventListener(ev, e=>{e.preventDefault();$("drop").classList.add("over");}));
+["dragleave","drop"].forEach(ev => $("drop").addEventListener(ev, e=>{e.preventDefault();$("drop").classList.remove("over");}));
+$("drop").addEventListener("drop", e => pick(e.dataTransfer.files[0]));
+
+const toB64 = file => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result.split(",")[1]);
+  r.onerror = () => rej(new Error("Could not read the file."));
+  r.readAsDataURL(file);
+});
+
+function svgUrl(svg){
+  const u = URL.createObjectURL(new Blob([svg], {type:"image/svg+xml"}));
+  urls.push(u); return u;
+}
+function fileUrl(b64, name){
+  const bin = atob(b64), arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  const u = URL.createObjectURL(new Blob([arr]));
+  urls.push(u); return u;
+}
+
+let timer = null;
+function progress(on){
+  const bar = $("bar"), fill = bar.querySelector("i"), st = $("status");
+  if(!on){ clearInterval(timer); bar.style.display="none"; st.style.display="none"; fill.style.width="0"; return; }
+  const msgs = ["Reading your design file...","Working out which stitches are outlines...",
+                "Looking for closed areas...","Creating the fills...","Preparing your files..."];
+  let p = 0, i = 0;
+  bar.style.display="block"; st.style.display="block"; st.textContent = msgs[0];
+  timer = setInterval(() => {
+    p = Math.min(p + 3, 92); fill.style.width = p + "%";
+    const next = Math.min(msgs.length-1, Math.floor(p/20));
+    if(next !== i){ i = next; st.textContent = msgs[i]; }
+  }, 350);
+}
+
+$("go").onclick = async () => {
+  if(!chosenFile) return;
+  urls.forEach(URL.revokeObjectURL); urls = [];
+  $("go").disabled = true; $("err").style.display="none";
+  ["results","details","dl"].forEach(id => $(id).style.display="none");
+  progress(true);
+  try{
+    const data = await toB64(chosenFile);
+    const res = await fetch("/api/process", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ filename: chosenFile.name, data, options: {
+        gap:+$("gap").value, thick:+$("thick").value, min_area:+$("min_area").value,
+        angle:+$("angle").value, spacing:+$("spacing").value,
+        fill_all:$("fill_all").checked, make_stitches:$("make_stitches").checked }})
+    });
+    const out = await res.json();
+    if(!res.ok || !out.ok) throw new Error(out.error || "The design could not be processed.");
+    show(out);
+  }catch(e){
+    $("err").textContent = e.message; $("err").style.display="block";
+  }finally{
+    progress(false); $("go").disabled = false;
+  }
+};
+
+function show(out){
+  const s = out.stats;
+  $("stats").innerHTML = [
+    [s.areas_filled, "areas filled automatically"],
+    [s.stitches_in.toLocaleString(), "stitches in your file"],
+    [s.size_mm + " mm", "design size"],
+    [out.seconds + " s", "time taken"]
+  ].map(([a,b]) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`).join("");
+
+  $("steps").innerHTML = out.steps.map(st => `
+    <div class="step">
+      <div><h3>${st.title}</h3><p>${st.text}</p></div>
+      <div class="shot" data-src="${svgUrl(st.svg)}">
+        <img src="${svgUrl(st.svg)}" alt="${st.title}">
+        <small>click to enlarge</small>
+      </div>
+    </div>`).join("");
+  document.querySelectorAll(".shot").forEach(el => el.onclick = () => {
+    $("big").src = el.dataset.src; $("modal").style.display = "flex";
+  });
+
+  $("blocks").innerHTML = "<h3 style='font-size:14px;margin:4px 0'>Colour blocks in your file</h3>" +
+    "<table><tr><th>Block</th><th>Treated as</th><th>Stitches</th></tr>" +
+    out.blocks.filter(b => b.stitches).map(b =>
+      `<tr><td>${b.block}</td><td><span class="tag ${b.role}">${b.role}</span></td>
+       <td>${b.stitches.toLocaleString()}</td></tr>`).join("") + "</table>";
+
+  const top = out.regions.slice().sort((a,b)=>b.area-a.area).slice(0,10);
+  $("regions").innerHTML = "<h3 style='font-size:14px;margin:18px 0 0'>Biggest areas found</h3>" +
+    "<table><tr><th>Area</th><th>Size (mm&sup2;)</th><th>Fill stitches</th></tr>" +
+    top.map(r => `<tr><td>${r.n}</td><td>${r.area}</td><td>${r.stitches.toLocaleString()}</td></tr>`).join("") +
+    "</table>" + (out.regions.length > 10 ?
+      `<p style="color:var(--muted);font-size:13px">and ${out.regions.length-10} more, all listed in regions.csv</p>` : "");
+
+  $("dlrow").innerHTML = Object.keys(out.downloads).map(name =>
+    `<a href="${fileUrl(out.downloads[name], name)}" download="${name}">
+       <button class="ghost">Download ${name}</button></a>`).join("");
+
+  ["results","details","dl"].forEach(id => $(id).style.display="block");
+  $("results").scrollIntoView({behavior:"smooth"});
+}
+
+$("close").onclick = () => $("modal").style.display = "none";
+$("modal").onclick = e => { if(e.target.id === "modal") $("modal").style.display = "none"; };
+document.addEventListener("keydown", e => { if(e.key === "Escape") $("modal").style.display = "none"; });
+</script>
+</body>
+</html>
