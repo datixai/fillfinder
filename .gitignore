@@ -1,0 +1,46 @@
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+*.spec
+
+# FillFinder run outputs (client results, can be large)
+runs/
+t/
+*_preview.png
+*_preview.svg
+*_regions.svg
+*_filled.dst
+render*.png
+blocks.png
+
+# Client design files (never commit these)
+*.DST
+*.dst
+*.PES
+*.pes
+*.EMB
+*.emb
+*.EXP
+*.exp
+*.JEF
+*.jef
+*.mov
+*.MOV
+*.zip
+
+# Keep the synthetic test design
+!test_flower.dst
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
