@@ -4,7 +4,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
-from process import run_request, MAX_UPLOAD  # noqa: E402
+from index import run_request, MAX_UPLOAD  # noqa: E402
 
 PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
 
@@ -14,9 +14,6 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*a, directory=PUBLIC, **kw)
 
     def do_POST(self):
-        if self.path.rstrip("/") != "/api/process":
-            self.send_error(404)
-            return
         import json
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_UPLOAD * 2:

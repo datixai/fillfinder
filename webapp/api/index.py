@@ -1,4 +1,4 @@
-"""Vercel serverless function: POST /api/process
+"""Vercel Python entrypoint (api/index.py). POST /api/process
 
 Body (JSON):
   {"filename": "design.dst", "data": "<base64 of the file>", "options": {...}}
@@ -6,6 +6,7 @@ Response (JSON):
   {"ok": true, "steps": [...], "stats": {...}, "downloads": {"name": "<base64>"}}
 """
 import json
+import os
 from http.server import BaseHTTPRequestHandler
 
 try:  # works both on Vercel (api/ as package root) and locally
@@ -71,7 +72,21 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        self._send(200, {"ok": True, "message": "FillFinder API is running. Send a POST request."})
+        if self.path.rstrip("/").endswith("/api/process") or self.path.startswith("/api/"):
+            self._send(200, {"ok": True, "message": "FillFinder API is running. Send a POST request."})
+            return
+        page = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "index.html")
+        try:
+            with open(page, "rb") as f:
+                body = f.read()
+        except OSError:
+            self._send(404, {"ok": False, "error": "Page not found."})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length") or 0)
