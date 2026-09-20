@@ -11,10 +11,20 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink)}
-  header{background:linear-gradient(135deg,#1e2350,#2b4fd0);color:#fff;padding:26px 20px}
-  header .in{max-width:1080px;margin:auto}
-  header h1{margin:0;font-size:24px;letter-spacing:.2px}
-  header p{margin:6px 0 0;opacity:.85;font-size:14px;max-width:70ch}
+  nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--line)}
+  nav .in{max-width:1080px;margin:auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+  .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#5f7bff);
+        display:grid;place-items:center;flex:0 0 auto}
+  .logo svg{width:18px;height:18px}
+  .brand{display:flex;flex-direction:column;line-height:1.15}
+  .brand b{font-size:15.5px;letter-spacing:.2px}
+  .brand span{font-size:11.5px;color:var(--muted)}
+  nav .spacer{flex:1}
+  nav a{color:var(--muted);text-decoration:none;font-size:13.5px;padding:6px 10px;border-radius:7px}
+  nav a:hover{color:var(--brand);background:#eef2ff}
+  .lede{color:var(--muted);font-size:14px;margin:0 0 16px;line-height:1.55;max-width:75ch}
+  @media(max-width:600px){nav .hide{display:none}}
   main{max-width:1080px;margin:auto;padding:22px 20px 60px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;
         box-shadow:0 1px 2px rgba(20,20,40,.05)}
@@ -68,15 +78,21 @@
 </style>
 </head>
 <body>
-<header><div class="in">
-  <h1>FillFinder</h1>
-  <p>Upload an embroidery design and see every closed area found and filled automatically. No tracing shape by
-     shape. Works with designs drawn as lines only, and with finished designs too.</p>
-</div></header>
+<nav><div class="in">
+  <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><path d="M4 15c4-8 12-8 16 0"/><path d="M4 9c4 8 12 8 16 0"/>
+    <circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/></svg></span>
+  <span class="brand"><b>FillFinder</b><span>Automatic fill for embroidery designs</span></span>
+  <span class="spacer"></span>
+  <a class="hide" href="#upload">Upload</a>
+  <a class="hide" href="https://datixai.com" target="_blank" rel="noopener">Datix AI</a>
+</div></nav>
 
 <main>
-  <section class="card">
-    <h2>1. Choose your design file</h2>
+  <section class="card" id="upload">
+    <h2>Choose your design file</h2>
+    <p class="lede">Upload a design and FillFinder finds every closed area in it and fills each one automatically,
+      with no tracing shape by shape. It works with designs drawn as lines only, and with finished designs too.</p>
     <div class="drop" id="drop">
       <b>Click here or drop a file</b>
       <span>DST, PES, EXP, JEF and similar. Up to 12 MB.</span>
@@ -106,7 +122,7 @@
     <div class="err" id="err"></div>
   </section>
 
-  <section class="card" id="results" style="display:none">
+  <section class="card" id="how" style="display:none">
     <h2>What happened to your design</h2>
     <div class="stats" id="stats"></div>
     <div id="steps"></div>
@@ -186,7 +202,7 @@ $("go").onclick = async () => {
   if(!chosenFile) return;
   urls.forEach(URL.revokeObjectURL); urls = [];
   $("go").disabled = true; $("err").style.display="none";
-  ["results","details","dl"].forEach(id => $(id).style.display="none");
+  ["how","details","dl"].forEach(id => $(id).style.display="none");
   progress(true);
   try{
     const data = await toB64(chosenFile);
@@ -245,8 +261,8 @@ function show(out){
     `<a href="${fileUrl(out.downloads[name], name)}" download="${name}">
        <button class="ghost">Download ${name}</button></a>`).join("");
 
-  ["results","details","dl"].forEach(id => $(id).style.display="block");
-  $("results").scrollIntoView({behavior:"smooth"});
+  ["how","details","dl"].forEach(id => $(id).style.display="block");
+  $("how").scrollIntoView({behavior:"smooth"});
 }
 
 $("close").onclick = () => $("modal").style.display = "none";
